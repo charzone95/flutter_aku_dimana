@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() => runApp(MyApp());
@@ -24,12 +25,70 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  Completer<GoogleMapController> _controller = Completer();
+  GoogleMapController _controller;
+  Geolocator _geolocator;
+  LatLng _currentPosition;
+  double _currentZoom;
+  String _textToDisplay;
+  StreamSubscription<Position> _positionStream;
 
-  static final CameraPosition _kLapanganMerdeka = CameraPosition(
-    target: LatLng(3.5913479, 98.6754698),
-    zoom: 16.0,
-  );
+  @override
+  void initState() {
+    super.initState();
+
+    _textToDisplay = "Sedang melacak posisi kamu..";
+    _currentPosition = LatLng(3.5913479, 98.6754698);
+    _currentZoom = 17.5;
+
+    _initLocationService();
+  }
+
+  Future<void> _initLocationService() async {
+    _geolocator = Geolocator();
+
+    var locationOptions = LocationOptions(accuracy: LocationAccuracy.best);
+
+    _positionStream =
+        _geolocator.getPositionStream(locationOptions).listen((position) {
+      if (position != null) {
+        _updateCurrentPosition(position);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _positionStream.cancel();
+    super.dispose();
+  }
+
+  void _updateCurrentPosition(Position position) {
+    _currentPosition = LatLng(position.latitude, position.longitude);
+    _refreshCameraPosition();
+    _geocodeCurrentPosition();
+  }
+
+  void _refreshCameraPosition() {
+    if (_controller != null) {
+      _controller.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(target: _currentPosition, zoom: _currentZoom),
+      ));
+    }
+  }
+
+  void _geocodeCurrentPosition() async {
+    var resultList = await _geolocator.placemarkFromCoordinates(_currentPosition.latitude, _currentPosition.longitude, localeIdentifier: "id-ID");
+
+    if (resultList.length > 0) {
+      Placemark firstResult = resultList[0];
+
+      String textResult = firstResult.thoroughfare + " " + firstResult.subThoroughfare + ", " + firstResult.locality;
+
+      setState(() {
+        _textToDisplay = textResult;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +96,16 @@ class _HomeState extends State<Home> {
       body: Stack(
         children: <Widget>[
           GoogleMap(
-            initialCameraPosition: _kLapanganMerdeka,
+            initialCameraPosition:
+                CameraPosition(target: _currentPosition, zoom: _currentZoom),
             mapType: MapType.normal,
             onMapCreated: (controller) {
-              _controller.complete(controller);
+              _controller = controller;
             },
+            onCameraMove: (cameraPosition) {
+              _currentZoom = cameraPosition.zoom;
+            },
+            myLocationEnabled: true,
           ),
           SafeArea(
             child: Container(
@@ -52,7 +116,7 @@ class _HomeState extends State<Home> {
                   height: 60.0,
                   padding: EdgeInsets.all(16.0),
                   child: Center(
-                    child: Text("Sedang melacak posisi kamu.."),
+                    child: Text(_textToDisplay),
                   ),
                 ),
               ),

@@ -31,6 +31,9 @@ class _HomeState extends State<Home> {
   double _currentZoom;
   String _textToDisplay;
   StreamSubscription<Position> _positionStream;
+  Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
+  bool _shouldRecenterMap = true;
+  Timer _mapDragTimer;
 
   @override
   void initState() {
@@ -63,13 +66,25 @@ class _HomeState extends State<Home> {
   }
 
   void _updateCurrentPosition(Position position) {
+    _moveMarker(position);
+
     _currentPosition = LatLng(position.latitude, position.longitude);
+
     _refreshCameraPosition();
     _geocodeCurrentPosition();
   }
 
+  void _moveMarker(Position position) {
+    var markerId = MarkerId("currentPos");
+    if (markers[markerId] == null || !(position.latitude.toStringAsFixed(4) == _currentPosition.latitude.toStringAsFixed(4) && position.longitude.toStringAsFixed(4) == _currentPosition.longitude.toStringAsFixed(4))) {
+      //mengurangi jumlah setstate yg terpanggil
+      setState(() {
+        markers[markerId] = Marker(markerId: markerId, position: _currentPosition);
+      });
+    }
+  }
   void _refreshCameraPosition() {
-    if (_controller != null) {
+    if (_controller != null && _shouldRecenterMap) {
       _controller.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(target: _currentPosition, zoom: _currentZoom),
       ));
@@ -77,12 +92,18 @@ class _HomeState extends State<Home> {
   }
 
   void _geocodeCurrentPosition() async {
-    var resultList = await _geolocator.placemarkFromCoordinates(_currentPosition.latitude, _currentPosition.longitude, localeIdentifier: "id-ID");
+    var resultList = await _geolocator.placemarkFromCoordinates(
+        _currentPosition.latitude, _currentPosition.longitude,
+        localeIdentifier: "id-ID");
 
     if (resultList.length > 0) {
       Placemark firstResult = resultList[0];
 
-      String textResult = firstResult.thoroughfare + " " + firstResult.subThoroughfare + ", " + firstResult.locality;
+      String textResult = firstResult.thoroughfare +
+          " " +
+          firstResult.subThoroughfare +
+          ", " +
+          firstResult.locality;
 
       setState(() {
         _textToDisplay = textResult;
@@ -104,8 +125,17 @@ class _HomeState extends State<Home> {
             },
             onCameraMove: (cameraPosition) {
               _currentZoom = cameraPosition.zoom;
+
+              //disable recenter, reenable after 5 second
+              _shouldRecenterMap = false;
+              if (_mapDragTimer != null && _mapDragTimer.isActive) {
+                _mapDragTimer.cancel();
+              }
+              _mapDragTimer = Timer(Duration(seconds: 5), () {
+                _shouldRecenterMap = true;
+              });
             },
-            myLocationEnabled: true,
+            markers: Set<Marker>.of(markers.values),
           ),
           SafeArea(
             child: Container(

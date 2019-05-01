@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -51,12 +52,16 @@ class _HomeState extends State<Home> {
 
     var locationOptions = LocationOptions(accuracy: LocationAccuracy.best);
 
-    _positionStream =
-        _geolocator.getPositionStream(locationOptions).listen((position) {
-      if (position != null) {
-        _updateCurrentPosition(position);
-      }
-    });
+    try {
+      _positionStream =
+          _geolocator.getPositionStream(locationOptions).listen((position) {
+            if (position != null) {
+              _updateCurrentPosition(position);
+            }
+          });
+    } on PlatformException catch (e) {
+      print("Permission denied");
+    }
   }
 
   @override
@@ -66,22 +71,19 @@ class _HomeState extends State<Home> {
   }
 
   void _updateCurrentPosition(Position position) {
-    _moveMarker(position);
-
     _currentPosition = LatLng(position.latitude, position.longitude);
 
+    _moveMarker(position);
     _refreshCameraPosition();
     _geocodeCurrentPosition();
   }
 
   void _moveMarker(Position position) {
     var markerId = MarkerId("currentPos");
-    if (markers[markerId] == null || !(position.latitude.toStringAsFixed(4) == _currentPosition.latitude.toStringAsFixed(4) && position.longitude.toStringAsFixed(4) == _currentPosition.longitude.toStringAsFixed(4))) {
-      //mengurangi jumlah setstate yg terpanggil
-      setState(() {
-        markers[markerId] = Marker(markerId: markerId, position: _currentPosition);
-      });
-    }
+    setState(() {
+      markers[markerId] = Marker(markerId: markerId, position: _currentPosition);
+    });
+
   }
   void _refreshCameraPosition() {
     if (_controller != null && _shouldRecenterMap) {

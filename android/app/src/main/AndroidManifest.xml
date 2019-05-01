@@ -6,8 +6,8 @@
 
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="aku_dimana"
-        android:icon="@mipmap/ic_launcher">
+        android:label="Aku Dimana?"
+        android:icon="@mipmap/launcher_icon">
 
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="MAPS_API_KEY"/>

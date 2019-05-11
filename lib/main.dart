@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:share/share.dart';
 
 void main() => runApp(MyApp());
 
@@ -55,10 +56,10 @@ class _HomeState extends State<Home> {
     try {
       _positionStream =
           _geolocator.getPositionStream(locationOptions).listen((position) {
-            if (position != null) {
-              _updateCurrentPosition(position);
-            }
-          });
+        if (position != null) {
+          _updateCurrentPosition(position);
+        }
+      });
     } on PlatformException catch (_) {
       print("Permission denied");
     }
@@ -81,10 +82,11 @@ class _HomeState extends State<Home> {
   void _moveMarker(Position position) {
     var markerId = MarkerId("currentPos");
     setState(() {
-      markers[markerId] = Marker(markerId: markerId, position: _currentPosition);
+      markers[markerId] =
+          Marker(markerId: markerId, position: _currentPosition);
     });
-
   }
+
   void _refreshCameraPosition() {
     if (_controller != null && _shouldRecenterMap) {
       _controller.animateCamera(CameraUpdate.newCameraPosition(
@@ -111,6 +113,18 @@ class _HomeState extends State<Home> {
         _textToDisplay = textResult;
       });
     }
+  }
+
+  void _shareCurrentLocation() {
+    String stringToShare = '';
+
+    stringToShare += 'Saya sedang berada di "' + _textToDisplay + '"';
+
+    stringToShare += "\n\n";
+
+    stringToShare += "http://www.google.com/maps/place/" + _currentPosition.latitude.toString() + "," + _currentPosition.longitude.toString();
+
+    Share.share(stringToShare);
   }
 
   @override
@@ -155,6 +169,12 @@ class _HomeState extends State<Home> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.share),
+        onPressed: () {
+          _shareCurrentLocation();
+        },
       ),
     );
   }

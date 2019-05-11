@@ -59,7 +59,7 @@ class _HomeState extends State<Home> {
               _updateCurrentPosition(position);
             }
           });
-    } on PlatformException catch (e) {
+    } on PlatformException catch (_) {
       print("Permission denied");
     }
   }
@@ -128,12 +128,12 @@ class _HomeState extends State<Home> {
             onCameraMove: (cameraPosition) {
               _currentZoom = cameraPosition.zoom;
 
-              //disable recenter, reenable after 5 second
+              //disable recenter, reenable after 3 second
               _shouldRecenterMap = false;
               if (_mapDragTimer != null && _mapDragTimer.isActive) {
                 _mapDragTimer.cancel();
               }
-              _mapDragTimer = Timer(Duration(seconds: 5), () {
+              _mapDragTimer = Timer(Duration(seconds: 3), () {
                 _shouldRecenterMap = true;
               });
             },

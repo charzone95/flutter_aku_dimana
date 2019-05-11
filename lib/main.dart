@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:share/share.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'menu.dart';
 
 void main() => runApp(MyApp());
 
@@ -122,7 +124,10 @@ class _HomeState extends State<Home> {
 
     stringToShare += "\n\n";
 
-    stringToShare += "http://www.google.com/maps/place/" + _currentPosition.latitude.toString() + "," + _currentPosition.longitude.toString();
+    stringToShare += "http://www.google.com/maps/place/" +
+        _currentPosition.latitude.toString() +
+        "," +
+        _currentPosition.longitude.toString();
 
     Share.share(stringToShare);
   }
@@ -170,10 +175,53 @@ class _HomeState extends State<Home> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.share),
-        onPressed: () {
+      floatingActionButton: MenuButton(
+        onTapShare: () {
           _shareCurrentLocation();
+        },
+        onTapHelp: () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+                  title: Text("Aplikasi Apa Ini?"),
+                  content: Text(
+                      "Sesuai dengan namanya, aplikasi ini hanya mendeteksi Anda sedang berada di mana. Aplikasi ini juga dapat mengirimkan posisi anda ke teman-teman anda via aplikasi sosial media yang Anda gunakan.\n\nSelain itu, tidak ada lagi yang bisa dilakukan aplikasi ini :("),
+                  actions: <Widget>[
+                    FlatButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text("Okelah"),
+                    ),
+                  ],
+                ),
+          );
+        },
+        onTapInfo: () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+                  title: Text("Info Aplikasi"),
+                  content: Text(
+                      "Aplikasi ini adalah aplikasi iseng dalam rangka mempelajari Flutter.\n\nSilakan kunjungi repository project ini untuk melihat source codenya."),
+                  actions: <Widget>[
+                    FlatButton(
+                      child: Text("Buka Repository"),
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        await launch(
+                            "https://github.com/charzone95/flutter_aku_dimana");
+                      },
+                    ),
+                    FlatButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text("OK"),
+                    ),
+                  ],
+                ),
+          );
         },
       ),
     );
